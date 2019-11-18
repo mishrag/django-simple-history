@@ -32,6 +32,10 @@ import json
 
 registered_models = {}
 
+MONGO_ID_FIELD_NAME = '_id'
+HISTORY_ID_FIELD_NAME = 'object_id'
+HISTORY_ID_FIELD_VERBOSE_NAME = 'id_of_tracked_object'
+
 
 def _default_get_user(request, **kwargs):
     try:
@@ -476,7 +480,11 @@ class HistoricalRecords(object):
 
         attrs = {}
         for field in self.fields_included(instance):
-            attrs[field.attname] = getattr(instance, field.attname)
+            if field.attname == MONGO_ID_FIELD_NAME:
+                attname = HISTORY_ID_FIELD_NAME
+            else:
+                attname = field.attname
+            attrs[attname] = getattr(instance, field.attname)
 
         relation_field = getattr(manager.model, "history_relation", None)
         if relation_field is not None:
@@ -532,9 +540,15 @@ def transform_field(field):
     field.name = field.attname
     if isinstance(field, models.BigAutoField):
         field.__class__ = models.BigIntegerField
+    elif issubclass(type(field), models.AutoField):
+        from djongo.models import ObjectIdField, GenericObjectIdField
+        if isinstance(field, ObjectIdField):
+            field.__class__ = GenericObjectIdField
+            field.attname = HISTORY_ID_FIELD_NAME
+            field.name = HISTORY_ID_FIELD_NAME
+            field.verbose_name = HISTORY_ID_FIELD_VERBOSE_NAME
     elif isinstance(field, models.AutoField):
         field.__class__ = models.IntegerField
-
     elif isinstance(field, models.FileField):
         # Don't copy file, just path.
         field.__class__ = models.TextField
