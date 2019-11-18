@@ -415,7 +415,7 @@ class HistoricalRecords(object):
             )
 
         extra_fields = {
-            "history_id": self._get_history_id_field(),
+            "_id": self._get_history_id_field(),
             "history_date": models.DateTimeField(),
             "history_change_reason": self._get_history_change_reason_field(),
             "history_type": models.CharField(
