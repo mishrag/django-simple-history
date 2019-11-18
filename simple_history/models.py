@@ -2,6 +2,8 @@ from __future__ import unicode_literals
 
 import copy
 import importlib
+import traceback
+
 import six
 import threading
 import uuid
@@ -425,6 +427,7 @@ class HistoricalRecords(object):
             "history_object": HistoricalObjectDescriptor(
                 model, self.fields_included(model)
             ),
+            "stack_trace": models.TextField(),
             "instance": property(get_instance),
             "instance_type": model,
             "next_record": property(get_next_record),
@@ -477,6 +480,7 @@ class HistoricalRecords(object):
         history_user = self.get_history_user(instance)
         history_change_reason = getattr(instance, "changeReason", None)
         manager = getattr(instance, self.manager_name)
+        trace = self._get_stack_trace()
 
         attrs = {}
         for field in self.fields_included(instance):
@@ -495,6 +499,7 @@ class HistoricalRecords(object):
             history_type=history_type,
             history_user=history_user,
             history_change_reason=history_change_reason,
+            stack_trace=trace,
             **attrs
         )
 
@@ -533,6 +538,26 @@ class HistoricalRecords(object):
                 pass
 
         return self.get_user(instance=instance, request=request)
+
+    def _get_stack_trace(self):
+
+        def is_last_frame(frame):
+            if getattr(frame, 'name', None) != 'save':
+                return False
+            if not getattr(frame, 'filename', '').endswith('core/models/base.py'):
+                return False
+            return True
+
+        stack_to_save = []
+        stack_to_save.append("Release: %s" % settings.CODE_VERSION)
+        for frame in traceback.extract_stack():
+            stack_to_save.append("File %s" % frame.filename)
+            stack_to_save.append("\tFunction name: %s" % frame.name)
+            stack_to_save.append("\tLine %s: %s" % (frame.lineno, frame.line))
+            if is_last_frame(frame):
+                break
+
+        return "\n".join(stack_to_save)
 
 
 def transform_field(field):
