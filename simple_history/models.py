@@ -449,7 +449,7 @@ class HistoricalRecords(object):
         the Meta inner class of the historical record model.
         """
         meta_fields = {
-            "ordering": ("-history_date", "-history_id"),
+            "ordering": ("-history_date", "-_id"),
             "get_latest_by": "history_date",
         }
         if self.user_set_verbose_name:
@@ -638,3 +638,12 @@ class ModelDelta(object):
         self.changed_fields = changed_fields
         self.old_record = old_record
         self.new_record = new_record
+
+
+test = {
+    "access_token": "n0NbBuSxnBiPirarTRfO2J9KiL5i5m",
+    "expires_in": 36000,
+    "token_type": "Bearer",
+    "scope": "read write",
+    "refresh_token": "opyXabuW6MXMlzmdoevN4ceoGey9Aq"
+}
